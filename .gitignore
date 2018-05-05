@@ -1,0 +1,6 @@
+*.exe
+*.jpg
+*.png
+example/*.exe
+example/*.jpg
+example/*.png
