@@ -85,6 +85,7 @@ func Upload(filename string) (map[string]interface{}, error) {
 	contentType := writer.FormDataContentType()
 	writer.Close() //发送之前必须调用Close()以写入结尾行
 	resp, err := http.Post(url, contentType, buf)
+	mutex.Unlock()
 	if err != nil {
 		return status, err
 	}
@@ -104,7 +105,7 @@ func Upload(filename string) (map[string]interface{}, error) {
 			return status, nil
 		}
 	}
-	mutex.Unlock()
+
 	return status, nil
 
 }
