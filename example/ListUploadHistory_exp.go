@@ -1,4 +1,5 @@
 package main
+
 import (
 	"fmt"
 	"github.com/sndnvaps/sm_ms_api"
@@ -16,13 +17,13 @@ func main() {
 			fmt.Printf("FileInfo: %d x %d\n", history.Data[i].Width, history.Data[i].Height)
 			fmt.Printf("StoreName: %s\n", history.Data[i].StoreName)
 			fmt.Printf("Size: %d\n", history.Data[i].Size)
-			fmt.Printf("Path: %s\n",history.Data[i].Path)
+			fmt.Printf("Path: %s\n", history.Data[i].Path)
 			fmt.Printf("Hash: %s\n", history.Data[i].Hash)
 			fmt.Printf("TimeStamp: %d\n", history.Data[i].TimeStamp)
-			fmt.Printf("Url: %s\n",history.Data[i].Url)
+			fmt.Printf("Url: %s\n", history.Data[i].Url)
 			fmt.Printf("Delete url link: %s\n", history.Data[i].Delete)
 			fmt.Printf("----------------------------\n")
-		} 
+		}
 
 	} else {
 		fmt.Println(err)
