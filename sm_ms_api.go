@@ -13,7 +13,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 )
+
+//锁，用于 Upload() func
+var mutex = &sync.Mutex{}
 
 //所有错误返回
 type ErrMsgBody struct {
@@ -48,6 +52,7 @@ type DataInfo struct {
 
 //doc link  https://sm.ms/doc/
 func Upload(filename string) (map[string]interface{}, error) {
+	mutex.Lock()
 	url := "https://sm.ms/api/upload"
 	status := make(map[string]interface{}) //因为返回值有两个类型， 一个为 ErrMsgBody, 一个为MsgBody
 
@@ -99,6 +104,7 @@ func Upload(filename string) (map[string]interface{}, error) {
 			return status, nil
 		}
 	}
+	mutex.Unlock()
 	return status, nil
 
 }
