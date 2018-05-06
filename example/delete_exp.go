@@ -6,5 +6,6 @@ import (
 
 func main() {
 	fmt.Printf("Delete file from  https://sm.ms\n")
-	sm_ms_api.Delete("https://sm.ms/delete/vJ82UtopYcnrZxq")
+	resp := sm_ms_api.Delete("https://sm.ms/delete/vJ82UtopYcnrZxq")
+	fmt.Println(resp)
 }
