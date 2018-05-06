@@ -10,8 +10,6 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		resp_body := status["msg"]
-		fmt.Println(resp_body)
 
 		for _, val := range status {
 			switch val.(type) {

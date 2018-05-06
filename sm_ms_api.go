@@ -126,26 +126,10 @@ func ListUploadHistory() (HistoryMsgBody, error) {
 	body, _ := ioutil.ReadAll(resp.Body)
 	if err = json.Unmarshal(body, &msg); err == nil {
 		return msg, nil
-		/*
-		num := len(msg.Data)
-		for i := 0; i < num; i++ {
-			fmt.Printf("----------------------------\n")
-			fmt.Printf("Id = %d\n", i+1)
-			fmt.Printf("Filename: %s\n", msg.Data[i].FileName)
-			fmt.Printf("FileInfo: %d x %d\n", msg.Data[i].Width, msg.Data[i].Height)
-			fmt.Printf("StoreName: %s\n", msg.Data[i].StoreName)
-			fmt.Printf("Size: %d\n", msg.Data[i].Size)
-			fmt.Printf("Path: %s\n",msg.Data[i].Path)
-			fmt.Printf("Hash: %s\n", msg.Data[i].Hash)
-			fmt.Printf("TimeStamp: %d\n", msg.Data[i].TimeStamp)
-			fmt.Printf("Url: %s\n",msg.Data[i].Url)
-			fmt.Printf("Delete url link: %s\n", msg.Data[i].Delete)
-			fmt.Printf("----------------------------\n")
-		}
-		*/
 	} else {
-		fmt.Println(err)
+		return msg, err
 	}
+
 	return msg, nil
 }
 
