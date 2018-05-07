@@ -15,11 +15,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sync"
+	//"sync"
 )
 
 //锁，用于 Upload() func
-var mutex = &sync.Mutex{}
+//var mutex = &sync.Mutex{}
 
 //用于 Upload() func
 type MsgBody struct {
@@ -33,6 +33,8 @@ type HistoryMsgBody struct {
 	Code string     `json:"code"`
 	Data []DataInfo `json:"data"`
 }
+
+//用于获取上传图片的信息
 type DataInfo struct {
 	Width     int    `json:"width"`
 	Height    int    `json:"height"`

@@ -30,35 +30,32 @@ api for  https://sm.ms
 # 返回值定义结构体
 
 ```go
-//所有错误返回
-type  ErrMsgBody struct {
-	Code string `json:"code"`
-	Msg string `json:"msg"`
-}
-
 //用于 Upload() func
 type MsgBody struct {
-	Code string `json:"code"`
-	Data DataInfo `json:"data"`
+	Code string   `json:"code"`
+	Data DataInfo `json:"data,omitempty"`
+	Msg  string   `json:"msg,omitempty"` //用于接收错误信息
 }
 
 //用于 ListUploadHistory() func
 type HistoryMsgBody struct {
-	Code string `json:"code"`
+	Code string     `json:"code"`
 	Data []DataInfo `json:"data"`
 }
+
+//用于获取上传图片的信息
 type DataInfo struct {
-	Width int `json:"width"`
-	Height int `json:"height"`
-	FileName string `json:"filename"`
+	Width     int    `json:"width"`
+	Height    int    `json:"height"`
+	FileName  string `json:"filename"`
 	StoreName string `json:"storename"`
-	Size int `json:"size"`
-	Path string `json:"path"`
-	Hash string `json:"hash"`
-	TimeStamp int64 `json:"timestamp"`
-	Ip string `json:"ip"`
-	Url string `json:"url"`
-	Delete string `json:"delete"`
+	Size      int    `json:"size"`
+	Path      string `json:"path"`
+	Hash      string `json:"hash"`
+	TimeStamp int64  `json:"timestamp"`
+	Ip        string `json:"ip"`
+	Url       string `json:"url"`
+	Delete    string `json:"delete"`
 }
 ```
 
