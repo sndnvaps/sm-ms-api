@@ -5,6 +5,7 @@ package sm_ms_api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/antchfx/htmlquery"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"sync"
 )
@@ -19,16 +21,11 @@ import (
 //锁，用于 Upload() func
 var mutex = &sync.Mutex{}
 
-//所有错误返回
-type ErrMsgBody struct {
-	Code string `json:"code"`
-	Msg  string `json:"msg"`
-}
-
 //用于 Upload() func
 type MsgBody struct {
 	Code string   `json:"code"`
-	Data DataInfo `json:"data"`
+	Data DataInfo `json:"data,omitempty"`
+	Msg  string   `json:"msg,omitempty"` //用于接收错误信息
 }
 
 //用于 ListUploadHistory() func
@@ -50,14 +47,35 @@ type DataInfo struct {
 	Delete    string `json:"delete"`
 }
 
-//doc link  https://sm.ms/doc/
-func Upload(filename string) (map[string]interface{}, error) {
-	mutex.Lock()
-	url := "https://sm.ms/api/upload"
-	status := make(map[string]interface{}) //因为返回值有两个类型， 一个为 ErrMsgBody, 一个为MsgBody
+//Check file suffix , only support jpeg,jpg,png,gif,bmp
+func CheckFileSuffix(filename string) (bool, string) {
+	suffix := path.Ext(filename)
+	if (suffix == ".jpeg") || (suffix == ".jpg") ||
+		(suffix == ".png") || (suffix == ".gif") ||
+		(suffix == ".bmp") {
+		return true, suffix
+	}
 
-	var errmsg ErrMsgBody
+	return false, suffix
+}
+
+//doc link  https://sm.ms/doc/
+func Upload(filename string) (MsgBody, error) {
+	//mutex.Lock()
+	url := "https://sm.ms/api/upload"
+
 	var msg MsgBody
+
+	msg = MsgBody{
+		Code: "Error",
+		Msg:  "Internal function error",
+	}
+
+	if isPic, suffix := CheckFileSuffix(filename); isPic != true {
+		errmsg := fmt.Sprintf("File has an invalid extension %s\nsupport file ext is jpeg,jpg,png,gif,bmp\n", suffix)
+		err := errors.New(errmsg)
+		return msg, err
+	}
 
 	buf := new(bytes.Buffer)
 	writer := multipart.NewWriter(buf)
@@ -65,18 +83,18 @@ func Upload(filename string) (map[string]interface{}, error) {
 	formFile, err := writer.CreateFormFile("smfile", fn)
 
 	if err != nil {
-		return status, err
+		return msg, err
 	}
 
 	//把文件读取并定稿表单
 	srcFile, err := os.Open(fn)
 	if err != nil {
-		return status, err
+		return msg, err
 	}
 	defer srcFile.Close()
 	_, err = io.Copy(formFile, srcFile)
 	if err != nil {
-		return status, err
+		return msg, err
 	}
 
 	writer.WriteField("ssl", "0")
@@ -85,29 +103,23 @@ func Upload(filename string) (map[string]interface{}, error) {
 	contentType := writer.FormDataContentType()
 	writer.Close() //发送之前必须调用Close()以写入结尾行
 	resp, err := http.Post(url, contentType, buf)
-	mutex.Unlock()
+	//mutex.Unlock()
 	if err != nil {
-		return status, err
+		return msg, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == 200 {
 		body, _ := ioutil.ReadAll(resp.Body)
-		if err = json.Unmarshal(body, &msg); err == nil {
-			status["msg"] = msg
-			return status, nil
-		} else {
-			return status, err
+		err = json.Unmarshal(body, &msg)
+		if err != nil {
+			return msg, err
 		}
-	} else {
-		body, _ := ioutil.ReadAll(resp.Body)
-		if err = json.Unmarshal(body, &errmsg); err == nil {
-			status["msg"] = errmsg
-			return status, nil
-		}
+
 	}
 
-	return status, nil
+	msg.Msg = "" //最后返回值，设置为 空
 
+	return msg, nil
 }
 
 //用指定的 删除地址来 删除已经上传的图片

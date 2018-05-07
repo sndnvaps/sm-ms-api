@@ -7,31 +7,25 @@ import (
 
 func main() {
 	fmt.Printf("let's upload the file to https://sm.ms\n")
-	status, err := sm_ms_api.Upload("test.jpg")
+	msg, err := sm_ms_api.Upload("test.jpg")
 	if err != nil {
 		fmt.Println(err)
 	} else {
-
-		for _, val := range status {
-			switch val.(type) {
-			case sm_ms_api.ErrMsgBody:
-				body := val.(sm_ms_api.ErrMsgBody)
-				fmt.Printf("ErrCode = %s\n", body.Code)
-				fmt.Printf("Msg = %s\n", body.Msg)
-			case sm_ms_api.MsgBody:
-				body := val.(sm_ms_api.MsgBody)
-				fmt.Printf("Upload %s\n", body.Code)
-				fmt.Printf("Filename: %s\n", body.Data.FileName)
-				fmt.Printf("FileInfo: %d x %d\n", body.Data.Width, body.Data.Height)
-				fmt.Printf("StoreName: %s\n", body.Data.StoreName)
-				fmt.Printf("Size: %d\n", body.Data.Size)
-				fmt.Printf("Path: %s\n", body.Data.Path)
-				fmt.Printf("Hash: %s\n", body.Data.Hash)
-				fmt.Printf("TimeStamp: %d\n", body.Data.TimeStamp)
-				fmt.Printf("Url: %s\n", body.Data.Url)
-				fmt.Printf("Delete: %s\n", body.Data.Delete)
-			}
+		fmt.Printf("Upload %s\n", msg.Code)
+		if msg.Msg != "" {
+			fmt.Printf("Msg = %s\n", msg.Msg)
+		} else {
+			fmt.Printf("Filename: %s\n", msg.Data.FileName)
+			fmt.Printf("FileInfo: %d x %d\n", msg.Data.Width, msg.Data.Height)
+			fmt.Printf("StoreName: %s\n", msg.Data.StoreName)
+			fmt.Printf("Size: %d\n", msg.Data.Size)
+			fmt.Printf("Path: %s\n", msg.Data.Path)
+			fmt.Printf("Hash: %s\n", msg.Data.Hash)
+			fmt.Printf("TimeStamp: %d\n", msg.Data.TimeStamp)
+			fmt.Printf("Url: %s\n", msg.Data.Url)
+			fmt.Printf("Delete: %s\n", msg.Data.Delete)
 		}
+
 	}
 
 }
