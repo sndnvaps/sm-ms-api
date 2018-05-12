@@ -11,6 +11,26 @@ import (
 	"time"
 )
 
+
+func Clear(c *cli.Context) error {
+	resp, err := sm_ms_api.Clear()
+	if err == nil {
+		fmt.Printf("Code: %s\n", resp.Code)
+		fmt.Printf("Msg: %s\n", resp.Msg)
+	} else {
+		return err
+	}
+
+	return nil
+}
+
+func Delete(c *cli.Context) error {
+	delurl := c.Args().First() //获取第一个参数
+	resp := sm_ms_api.Delete(delurl)
+	fmt.Println(resp)
+	return nil
+}
+
 //Test is file
 func IsFile(file string) bool {
 	f, err := os.Stat(file)
@@ -59,13 +79,6 @@ func List(c *cli.Context) error {
 		return err
 	}
 
-	return nil
-}
-
-func Delete(c *cli.Context) error {
-	delurl := c.Args().First() //获取第一个参数
-	resp := sm_ms_api.Delete(delurl)
-	fmt.Println(resp)
 	return nil
 }
 
@@ -148,6 +161,12 @@ func main() {
 	app.Copyright = "(c) 2018 Jimes Yang<sndnvaps@gmail.com>"
 	app.Usage = "A tool for sm.ms"
 	app.Commands = []cli.Command{
+		{
+			Name:	"clear",
+			Aliases: []string{"c","cls"},
+			Usage:	"Clear the history file list log you upload to sm.ms",
+			Action: Clear,
+		},
 		{
 			Name:    "delete",
 			Aliases: []string{"d"},

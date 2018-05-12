@@ -151,3 +151,21 @@ func ListUploadHistory() (HistoryMsgBody, error) {
 
 	return msg, nil
 }
+
+func Clear() (MsgBody, error) {
+	var msg MsgBody
+	resp, err := http.Get("https://sm.ms/api/clear")
+	if err != nil {
+		return msg,err
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	if err = json.Unmarshal(body,&msg); err == nil {
+		return msg,nil
+	} else {
+		return msg,err
+	}
+
+	return msg,nil
+}

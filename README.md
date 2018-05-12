@@ -20,11 +20,15 @@ api for  https://sm.ms
 # 函数原型
 
 ```go
-  func Upload(filename string) (map[string]interface{}, error)
+
+  func Clear() (MsgBody, error)
 
   func Delete(delUrlLink string) string
 
+  func Upload(filename string) (map[string]interface{}, error)
+
   func ListUploadHistory() (HistoryMsgBody, error)
+
 ```
 
 # 返回值定义结构体
