@@ -11,7 +11,6 @@ import (
 	"time"
 )
 
-
 func Clear(c *cli.Context) error {
 	resp, err := sm_ms_api.Clear()
 	if err == nil {
@@ -162,10 +161,10 @@ func main() {
 	app.Usage = "A tool for sm.ms"
 	app.Commands = []cli.Command{
 		{
-			Name:	"clear",
-			Aliases: []string{"c","cls"},
-			Usage:	"Clear the history file list log you upload to sm.ms",
-			Action: Clear,
+			Name:    "clear",
+			Aliases: []string{"c", "cls"},
+			Usage:   "Clear the history file list log you upload to sm.ms",
+			Action:  Clear,
 		},
 		{
 			Name:    "delete",
