@@ -10,9 +10,11 @@ api for  https://sm.ms
 
 # 支持如下功能
 
- [Upload](example/upload_exp.go)
+ [Clear](example/clear_exp.go)
 
  [Delete](example/delete_exp.go)
+
+ [Upload](example/upload_exp.go)
 
  [ListHistory](example/ListUploadHistory_exp.go)
 
