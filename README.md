@@ -67,3 +67,6 @@ type DataInfo struct {
 
  
 # 使用方法，请查看 [example](example) 目录下面的例子
+
+# 更新日志
+   - 2018.05.24 添加 gui界面的例子(使用 https://github.com/lxn/walk)
