@@ -70,3 +70,6 @@ type DataInfo struct {
 
 # 更新日志
    - 2018.05.24 添加 gui界面的例子(使用 https://github.com/lxn/walk)
+   
+## License
+#### [MIT](https://sndnvaps.mit-license.org/2018)
