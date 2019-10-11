@@ -7,31 +7,61 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/antchfx/htmlquery"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 	//"sync"
 )
+
+//API登录，返回token
+//用于 GenToken() func
+type LoginBody struct {
+	UserName string `json:"username"`
+	PassWord string `json:"password"`
+}
+
+//Authorization, 用于验证用户信息，token
+type Authorization struct {
+	Token string `json:"Authorization"`
+}
+
+//提供 API Token，获得对应用户的基本信息.
+type UserProfile struct {
+	Username     string `json:"username"`
+	Email        string `json:"email"`
+	Role         string `json:"role"`
+	GroupExpire  string `json:"group_expire"`
+	DiskUsage    string `json:"disk_usage"`
+	DiskUsageRaw int    `json:"disk_usage_raw"`
+	DiskLimit    string `json:"disk_limit"`
+	DiskLimitRaw int    `json:"disk_limit_raw"`
+}
 
 //锁，用于 Upload() func
 //var mutex = &sync.Mutex{}
 
-//用于 Upload() func
+//用于 返回信息
 type MsgBody struct {
-	Code string   `json:"code"`
-	Data DataInfo `json:"data,omitempty"`
-	Msg  string   `json:"msg,omitempty"` //用于接收错误信息
+	Success   bool                   `json:"success"`
+	Code      string                 `json:"code"`
+	Message   string                 `json:"Message"` //用于接收错误信息
+	Data      map[string]interface{} `json:"data,omitempty"`
+	RequestId string                 `json:"RequestID"`
 }
 
-//用于 ListUploadHistory() func
-type HistoryMsgBody struct {
-	Code string     `json:"code"`
-	Data []DataInfo `json:"data"`
+//用于 返回信息
+type SliceMsgBody struct {
+	Success   bool                     `json:"success"`
+	Code      string                   `json:"code"`
+	Message   string                   `json:"Message"` //用于接收错误信息
+	Data      []map[string]interface{} `json:"data,omitempty"`
+	RequestId string                   `json:"RequestID"`
 }
 
 //用于获取上传图片的信息
@@ -39,14 +69,14 @@ type DataInfo struct {
 	Width     int    `json:"width"`
 	Height    int    `json:"height"`
 	FileName  string `json:"filename"`
+	FileId    int    `json:"file_id,omitempty"`
 	StoreName string `json:"storename"`
 	Size      int    `json:"size"`
 	Path      string `json:"path"`
 	Hash      string `json:"hash"`
-	TimeStamp int64  `json:"timestamp"`
-	Ip        string `json:"ip"`
 	Url       string `json:"url"`
 	Delete    string `json:"delete"`
+	Page      string `json:"page"`
 }
 
 //Check file suffix , only support jpeg,jpg,png,gif,bmp
@@ -61,16 +91,44 @@ func CheckFileSuffix(filename string) (bool, string) {
 	return false, suffix
 }
 
+func GenToken(usr, pwd string) (SliceMsgBody, error) {
+	tmpurl := "https://sm.ms/api/v2/token"
+	data := url.Values{}
+	data.Set("username", usr)
+	data.Set("password", pwd)
+
+	var msg SliceMsgBody
+	msg = SliceMsgBody{
+		Code:    "error",
+		Message: " Internal function error",
+	}
+	resp, err := http.PostForm(tmpurl, data)
+	if err != nil {
+		fmt.Println(err.Error())
+		return msg, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+		err = json.Unmarshal(body, &msg)
+		if err != nil {
+			return msg, err
+		}
+
+	}
+	return msg, nil
+}
+
 //doc link  https://sm.ms/doc/
-func Upload(filename string) (MsgBody, error) {
+func Upload(filename string, token string) (MsgBody, error) {
 	//mutex.Lock()
-	url := "https://sm.ms/api/upload"
+	tmpurl := "https://sm.ms/api/v2/upload"
 
 	var msg MsgBody
 
 	msg = MsgBody{
-		Code: "Error",
-		Msg:  "Internal function error",
+		Code:    "Error",
+		Message: "Internal function error",
 	}
 
 	if isPic, suffix := CheckFileSuffix(filename); isPic != true {
@@ -99,12 +157,15 @@ func Upload(filename string) (MsgBody, error) {
 		return msg, err
 	}
 
-	writer.WriteField("ssl", "0")
+	//当token不为空的时候，写入数据，用于上传数据使用
+	if "" != token {
+		writer.WriteField("Authorization", token)
+	}
 
 	//发送表单
 	contentType := writer.FormDataContentType()
 	writer.Close() //发送之前必须调用Close()以写入结尾行
-	resp, err := http.Post(url, contentType, buf)
+	resp, err := http.Post(tmpurl, contentType, buf)
 	//mutex.Unlock()
 	if err != nil {
 		return msg, err
@@ -119,25 +180,13 @@ func Upload(filename string) (MsgBody, error) {
 
 	}
 
-	msg.Msg = "" //最后返回值，设置为 空
-
 	return msg, nil
 }
 
-//用指定的 删除地址来 删除已经上传的图片
-func Delete(delUrlLink string) string {
-
-	url := delUrlLink
-	doc, _ := htmlquery.LoadURL(url)
-	resp_msg := htmlquery.InnerText(htmlquery.FindOne(doc, "//div[@class='container']"))
-	fmt.Printf("Delete [%s] from  https://sm.ms\n", url)
-	return resp_msg
-}
-
 //获得过去一小时内上传的文件列表
-func ListUploadHistory() (HistoryMsgBody, error) {
-	var msg HistoryMsgBody
-	resp, err := http.Get("https://sm.ms/api/list")
+func ListHistory() (SliceMsgBody, error) {
+	var msg SliceMsgBody
+	resp, err := http.Get("https://sm.ms/api/v2/history")
 	if err != nil {
 		return msg, err
 	}
@@ -149,12 +198,86 @@ func ListUploadHistory() (HistoryMsgBody, error) {
 		return msg, err
 	}
 
-	return msg, nil
+}
+
+//提供 API Token，获得对应用户的所有上传图片信息.
+func ListUserHistory(token string) (SliceMsgBody, error) {
+	var msg SliceMsgBody
+	tmpurl := "https://sm.ms/api/v2/upload_history"
+	req, err := http.NewRequest("POST", tmpurl, nil)
+	req.Header.Add("Content-Type", "multipart/form-data")
+	if "" != token {
+		req.Header.Add("Authorization", token)
+	}
+	if err != nil {
+		return msg, err
+	}
+	defer req.Body.Close()
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return msg, err
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	if err = json.Unmarshal(body, &msg); err == nil {
+		return msg, nil
+	} else {
+		return msg, err
+	}
+
+}
+
+//提供 API Token，获得对应用户的基本信息.
+func ListUserProfile(token string) (SliceMsgBody, error) {
+	var msg SliceMsgBody
+	tmpurl := "https://sm.ms/api/v2/profile"
+	req, err := http.NewRequest("POST", tmpurl, nil)
+	req.Header.Add("Content-Type", "multipart/form-data")
+	req.Header.Add("Authorization", token)
+
+	if err != nil {
+		return msg, err
+	}
+	defer req.Body.Close()
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return msg, err
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	if err = json.Unmarshal(body, &msg); err == nil {
+		return msg, nil
+	} else {
+		return msg, err
+	}
+
+}
+
+//用指定的 删除地址来 删除已经上传的图片
+func Delete(hash string) (MsgBody, error) {
+
+	tmpurl := "https://sm.ms/api/v2/delete/" + hash
+	var msg MsgBody
+	resp, err := http.Get(tmpurl)
+	if err != nil {
+		return msg, err
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	if err = json.Unmarshal(body, &msg); err == nil {
+		return msg, nil
+	} else {
+		return msg, err
+	}
 }
 
 func Clear() (MsgBody, error) {
 	var msg MsgBody
-	resp, err := http.Get("https://sm.ms/api/clear")
+	resp, err := http.Get("https://sm.ms/api/v2/clear")
 	if err != nil {
 		return msg, err
 	}
@@ -166,6 +289,4 @@ func Clear() (MsgBody, error) {
 	} else {
 		return msg, err
 	}
-
-	return msg, nil
 }
