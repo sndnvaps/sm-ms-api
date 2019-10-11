@@ -1,7 +1,7 @@
 # sm_ms_api
 api for  https://sm.ms
 
-# Golang 版本的 https://sm.ms API接口
+# Golang 版本的 https://sm.ms/doc/v2 API接口
 
 # 如何安装 
 
