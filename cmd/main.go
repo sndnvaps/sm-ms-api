@@ -2,31 +2,45 @@ package main
 
 import (
 	"fmt"
-	"github.com/sndnvaps/sm_ms_api"
-	"github.com/urfave/cli"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/goinggo/mapstructure"
+	"github.com/sndnvaps/sm_ms_api"
+	"github.com/urfave/cli"
 )
 
 func Clear(c *cli.Context) error {
 	resp, err := sm_ms_api.Clear()
 	if err == nil {
+		fmt.Printf("success: %v\n", resp.Success)
 		fmt.Printf("Code: %s\n", resp.Code)
-		fmt.Printf("Msg: %s\n", resp.Msg)
+		fmt.Printf("message: %s\n", resp.Message)
 	} else {
-		return err
+		fmt.Printf("success: %v\n", resp.Success)
+		fmt.Printf("Code: %s\n", resp.Code)
+		fmt.Printf("message: %s\n", resp.Message)
 	}
-
+	fmt.Printf("RequestId: %s\n", resp.RequestId)
 	return nil
 }
 
 func Delete(c *cli.Context) error {
-	delurl := c.Args().First() //获取第一个参数
-	resp := sm_ms_api.Delete(delurl)
-	fmt.Println(resp)
+	hash := c.String("hash")
+	resp, err := sm_ms_api.Delete(hash)
+	if err == nil {
+		fmt.Printf("success: %v\n", resp.Success)
+		fmt.Printf("Code: %s\n", resp.Code)
+		fmt.Printf("message: %s\n", resp.Message)
+	} else {
+		fmt.Printf("success: %v\n", resp.Success)
+		fmt.Printf("Code: %s\n", resp.Code)
+		fmt.Printf("message: %s\n", resp.Message)
+	}
+	fmt.Printf("RequestId: %s\n", resp.RequestId)
 	return nil
 }
 
@@ -56,21 +70,35 @@ func IsExist(path string) bool {
 }
 
 func List(c *cli.Context) error {
-	history, err := sm_ms_api.ListUploadHistory()
+	token := c.String("api")
+	var history sm_ms_api.SliceMsgBody
+	var err error
+	if "" == token {
+		history, err = sm_ms_api.ListHistory()
+	} else {
+		history, err = sm_ms_api.ListUserHistory(token)
+	}
 	if err == nil {
 		num := len(history.Data)
+		fmt.Printf("len(history.Data) = %d ", len(history.Data))
 		for i := 0; i < num; i++ {
+			data := history.Data[i]
+			var datainfo sm_ms_api.DataInfo
+			err := mapstructure.Decode(data, &datainfo) //map[string]interface{} -> struct
+			if err != nil {
+				fmt.Println(err)
+			}
 			fmt.Printf("----------------------------\n")
-			fmt.Printf("Id = %d\n", i+1)
-			fmt.Printf("Filename: %s\n", history.Data[i].FileName)
-			fmt.Printf("FileInfo: %d x %d\n", history.Data[i].Width, history.Data[i].Height)
-			fmt.Printf("StoreName: %s\n", history.Data[i].StoreName)
-			fmt.Printf("Size: %d\n", history.Data[i].Size)
-			fmt.Printf("Path: %s\n", history.Data[i].Path)
-			fmt.Printf("Hash: %s\n", history.Data[i].Hash)
-			fmt.Printf("TimeStamp: %d\n", history.Data[i].TimeStamp)
-			fmt.Printf("Url: %s\n", history.Data[i].Url)
-			fmt.Printf("Delete url link: %s\n", history.Data[i].Delete)
+			fmt.Printf("Id = %d\n", datainfo.FileId)
+			fmt.Printf("Filename: %s\n", datainfo.FileName)
+			fmt.Printf("FileInfo: %d x %d\n", datainfo.Width, datainfo.Height)
+			fmt.Printf("StoreName: %s\n", datainfo.StoreName)
+			fmt.Printf("Size: %d\n", datainfo.Size)
+			fmt.Printf("Path: %s\n", datainfo.Path)
+			fmt.Printf("Hash: %s\n", datainfo.Hash)
+			fmt.Printf("Url: %s\n", datainfo.Url)
+			fmt.Printf("Delete url link: %s\n", datainfo.Delete)
+			fmt.Printf("Page link: %s\n", datainfo.Page)
 			fmt.Printf("----------------------------\n")
 		}
 
@@ -84,6 +112,7 @@ func List(c *cli.Context) error {
 func Upload(c *cli.Context) error {
 
 	path := c.Args().First()
+	token := c.String("api")
 
 	if IsDir(path) {
 		files, err := ioutil.ReadDir(path)
@@ -98,51 +127,107 @@ func Upload(c *cli.Context) error {
 				} else {
 					FullPath = path + "/" + file.Name()
 				}
-				msg, err := sm_ms_api.Upload(FullPath)
+				msg, err := sm_ms_api.Upload(FullPath, token)
 				if err != nil {
 					return err
 				} else {
 					fmt.Printf("Upload %s\n", msg.Code)
-					if msg.Msg != "" {
-						fmt.Printf("Msg = %s\n", msg.Msg)
-					} else {
-						fmt.Printf("Filename: %s\n", msg.Data.FileName)
-						fmt.Printf("FileInfo: %d x %d\n", msg.Data.Width, msg.Data.Height)
-						fmt.Printf("StoreName: %s\n", msg.Data.StoreName)
-						fmt.Printf("Size: %d\n", msg.Data.Size)
-						fmt.Printf("Path: %s\n", msg.Data.Path)
-						fmt.Printf("Hash: %s\n", msg.Data.Hash)
-						fmt.Printf("TimeStamp: %d\n", msg.Data.TimeStamp)
-						fmt.Printf("Url: %s\n", msg.Data.Url)
-						fmt.Printf("Delete: %s\n", msg.Data.Delete)
-					}
+					fmt.Printf("Msg = %s\n", msg.Message)
 
+					data := msg.Data
+
+					var datainfo sm_ms_api.DataInfo
+					mapstructure.Decode(data, &datainfo) //map[string]interface{} -> struct
+					fmt.Printf("----------------------------\n")
+					fmt.Printf("Id = %d\n", datainfo.FileId)
+					fmt.Printf("Filename: %s\n", datainfo.FileName)
+					fmt.Printf("FileInfo: %d x %d\n", datainfo.Width, datainfo.Height)
+					fmt.Printf("StoreName: %s\n", datainfo.StoreName)
+					fmt.Printf("Size: %d\n", datainfo.Size)
+					fmt.Printf("Path: %s\n", datainfo.Path)
+					fmt.Printf("Hash: %s\n", datainfo.Hash)
+					fmt.Printf("Url: %s\n", datainfo.Url)
+					fmt.Printf("Delete url link: %s\n", datainfo.Delete)
+					fmt.Printf("Page link: %s\n", datainfo.Page)
+					fmt.Printf("RequestId = %s\n", msg.RequestId)
 				}
-
 			}
 		}
 	} else {
-		msg, err := sm_ms_api.Upload(path)
+		msg, err := sm_ms_api.Upload(path, token)
 		if err != nil {
 			return err
 		} else {
 			fmt.Printf("Upload %s\n", msg.Code)
-			if msg.Msg != "" {
-				fmt.Printf("Msg = %s\n", msg.Msg)
-			} else {
-				fmt.Printf("Filename: %s\n", msg.Data.FileName)
-				fmt.Printf("FileInfo: %d x %d\n", msg.Data.Width, msg.Data.Height)
-				fmt.Printf("StoreName: %s\n", msg.Data.StoreName)
-				fmt.Printf("Size: %d\n", msg.Data.Size)
-				fmt.Printf("Path: %s\n", msg.Data.Path)
-				fmt.Printf("Hash: %s\n", msg.Data.Hash)
-				fmt.Printf("TimeStamp: %d\n", msg.Data.TimeStamp)
-				fmt.Printf("Url: %s\n", msg.Data.Url)
-				fmt.Printf("Delete: %s\n", msg.Data.Delete)
-			}
+			fmt.Printf("Msg = %s\n", msg.Message)
+			data := msg.Data
+			var datainfo sm_ms_api.DataInfo
+			//fmt.Println(data) //for debug
+			mapstructure.Decode(data, &datainfo) //map[string]interface{} -> struct
+			fmt.Printf("----------------------------\n")
+			fmt.Printf("Id = %d\n", datainfo.FileId)
+			fmt.Printf("Filename: %s\n", datainfo.FileName)
+			fmt.Printf("FileInfo: %d x %d\n", datainfo.Width, datainfo.Height)
+			fmt.Printf("StoreName: %s\n", datainfo.StoreName)
+			fmt.Printf("Size: %d\n", datainfo.Size)
+			fmt.Printf("Path: %s\n", datainfo.Path)
+			fmt.Printf("Hash: %s\n", datainfo.Hash)
+			fmt.Printf("Url: %s\n", datainfo.Url)
+			fmt.Printf("Delete url link: %s\n", datainfo.Delete)
+			fmt.Printf("Page link: %s\n", datainfo.Page)
+			fmt.Printf("RequestId = %s\n", msg.RequestId)
 		}
 	}
 
+	return nil
+}
+
+func ListUserProfile(c *cli.Context) error {
+	token := c.String("api")
+
+	msg, err := sm_ms_api.ListUserProfile(token)
+
+	if err != nil {
+		return err
+	} else {
+		fmt.Printf("Upload %s\n", msg.Code)
+		fmt.Printf("Msg = %s\n", msg.Message)
+
+		data := msg.Data[0]
+		var usr_profile sm_ms_api.UserProfile
+		mapstructure.Decode(data, &usr_profile) //map[string]interface{} -> struct
+		fmt.Printf("Username: %s\n", usr_profile.Username)
+		fmt.Printf("Email: %s\n", usr_profile.Email)
+		fmt.Printf("Role: %s\n", usr_profile.Role)
+		fmt.Printf("Group_expire: %s\n", usr_profile.GroupExpire)
+		fmt.Printf("Disk_Usage: %s\n", usr_profile.DiskUsage)
+		fmt.Printf("Disk_Usage_Raw: %d\n", usr_profile.DiskUsageRaw)
+		fmt.Printf("DiskLimit: %s\n", usr_profile.DiskLimit)
+		fmt.Printf("DiskLimitRaw: %d\n", usr_profile.DiskLimitRaw)
+		fmt.Printf("RequestId = %s\n", msg.RequestId)
+	}
+	return nil
+}
+
+func Login(c *cli.Context) error {
+	usr := c.String("username")
+	pwd := c.String("password")
+
+	msg, err := sm_ms_api.GenToken(usr, pwd)
+
+	if err != nil {
+		return err
+	} else {
+		fmt.Printf("Upload %s\n", msg.Code)
+		fmt.Printf("Msg = %s\n", msg.Message)
+
+		data := msg.Data[0]
+
+		var token sm_ms_api.Authorization
+		mapstructure.Decode(data, &token) //map[string]interface{} -> struct
+
+		fmt.Printf("Authorization: %s\n", token.Token)
+	}
 	return nil
 }
 
@@ -150,14 +235,14 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "sm_ms_tools"
 	app.Compiled = time.Now()
-	app.Version = "1.0.0"
+	app.Version = "2.0.0"
 	app.Authors = []cli.Author{
 		cli.Author{
 			Name:  "Jimes Yang",
 			Email: "sndnvaps@gmail.com",
 		},
 	}
-	app.Copyright = "(c) 2018 Jimes Yang<sndnvaps@gmail.com>"
+	app.Copyright = "(c) 2018 - 2019 Jimes Yang<sndnvaps@gmail.com>"
 	app.Usage = "A tool for sm.ms"
 	app.Commands = []cli.Command{
 		{
@@ -169,20 +254,65 @@ func main() {
 		{
 			Name:    "delete",
 			Aliases: []string{"d"},
-			Usage:   "delete the pic you upload to sm.ms ",
-			Action:  Delete,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "hash",
+					Usage: "hash_id of the sm.ms picture",
+				},
+			},
+			Usage:  "delete the pic you upload to sm.ms ",
+			Action: Delete,
 		},
 		{
 			Name:    "list",
 			Aliases: []string{"l"},
 			Usage:   "list the upload history you upload to sm.ms",
-			Action:  List,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "token, api",
+					Usage: "with token can show the user's upload pic info(it can be empty)",
+				},
+			},
+			Action: List,
+		},
+		{
+			Name:    "listusrprofile",
+			Aliases: []string{"lup"},
+			Usage:   "list the user_profile of sm.ms",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "token, api",
+					Usage: "with token can show the user's Profile",
+				},
+			},
+			Action: ListUserProfile,
 		},
 		{
 			Name:    "upload",
 			Aliases: []string{"u", "up"},
-			Usage:   "upload the file or the files in the folder to sm.ms",
-			Action:  Upload,
+			Usage:   "upload the file or the files in the folder to sm.ms(with api token or not)",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "token, api",
+					Usage: "api token (it can be empty)",
+				},
+			},
+			Action: Upload,
+		},
+		{
+			Name:  "login",
+			Usage: "use the username,password to get the api token",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "username, usr",
+					Usage: "username of sm.ms",
+				},
+				cli.StringFlag{
+					Name:  "password, pwd",
+					Usage: "password of sm.ms",
+				},
+			},
+			Action: Login,
 		},
 	}
 
