@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goinggo/mapstructure"
+	"github.com/mitchellh/mapstructure"
 	"github.com/sndnvaps/sm_ms_api"
 	"github.com/urfave/cli"
 )
@@ -80,7 +80,7 @@ func List(c *cli.Context) error {
 	}
 	if err == nil {
 		num := len(history.Data)
-		fmt.Printf("len(history.Data) = %d ", len(history.Data))
+		//fmt.Printf("len(history.Data) = %d ", len(history.Data))
 		for i := 0; i < num; i++ {
 			data := history.Data[i]
 			var datainfo sm_ms_api.DataInfo
