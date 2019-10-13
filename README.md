@@ -6,6 +6,10 @@ api for  https://sm.ms
 # 如何安装 
 
    go get gopkg.in/sndnvaps/sm-ms-api.v2
+   
+# 如果需要使用v1版本，可以用如下的命令来安装
+
+  go get gopkg.in/sndnvaps/sm-ms-api.v1
 
 
 # 支持如下功能
