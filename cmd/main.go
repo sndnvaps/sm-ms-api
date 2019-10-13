@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/sndnvaps/sm_ms_api"
+	"gopkg.in/sndnvaps/sm-ms-api.v1"
 	"github.com/urfave/cli"
 	"io/ioutil"
 	"log"
