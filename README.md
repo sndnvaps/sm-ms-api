@@ -5,7 +5,7 @@ api for  https://sm.ms
 
 # 如何安装 
 
-   go get github.com/sndnvaps/sm_ms_api
+   go get gopkg.in/sndnvaps/sm-ms-api.v2
 
 
 # 支持如下功能

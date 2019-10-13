@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/sndnvaps/sm_ms_api"
 	"github.com/urfave/cli"
+	sm_ms_api "gopkg.in/sndnvaps/sm-ms-api.v2"
 )
 
 func Clear(c *cli.Context) error {
