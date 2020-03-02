@@ -5,22 +5,13 @@ api for  https://sm.ms
 
 # 如何安装 
 
-   go get gopkg.in/sndnvaps/sm-ms-api.v2
-   
-# 如果需要使用v1版本，可以用如下的命令来安装
-
-  go get gopkg.in/sndnvaps/sm-ms-api.v1
+建议使用go mod 安装
+支持go 1.13.x
 
 
-# 支持如下功能
+# 测试代码
 
- [Clear](example/clear_exp.go)
-
- [Delete](example/delete_exp.go)
-
- [Upload](example/upload_exp.go)
-
- [ListHistory](example/ListUploadHistory_exp.go)
+ [main.go](cmd/main.go)
 
 
 # 函数原型
@@ -72,8 +63,6 @@ type DataInfo struct {
  
 # 使用方法，请查看 [example](example) 目录下面的例子
 
-# 更新日志
-   - 2018.05.24 添加 gui界面的例子(使用 https://github.com/lxn/walk)
-   
+
 ## License
 #### [MIT](https://sndnvaps.mit-license.org/2018)
