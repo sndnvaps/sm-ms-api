@@ -6,7 +6,7 @@ api for  https://sm.ms
 # 如何安装 
 
 建议使用go mod 安装
-支持go 1.13.x
+支持go 1.16.x
 
 
 # 测试代码
@@ -21,48 +21,73 @@ api for  https://sm.ms
   func Clear() (MsgBody, error)
 
   func Delete(delUrlLink string) string
+  func GenToken(usr, pwd string) (MsgBody, error)
 
-  func Upload(filename string) (map[string]interface{}, error)
+  func Upload(filename string,token string) (MsgBody, error)
 
-  func ListUploadHistory() (HistoryMsgBody, error)
+  func ListUploadHistory() (SliceMsgBody, error)
+  func ListUserHistory(token string, page int) (SliceMsgBody, error)
+  func 
 
 ```
 
 # 返回值定义结构体
 
 ```go
-//用于 Upload() func
+// Authorization, 用于验证用户信息，token
+type Authorization struct {
+	Token string `json:"token"`
+}
+
+// 提供 API Token，获得对应用户的基本信息.
+type UserProfile struct {
+	Username      string `json:"username"`
+	Email         string `json:"email"`
+	Role          string `json:"role"`
+	GroupExpire   string `json:"group_expire"`
+	DiskUsage     string `json:"disk_usage"`
+	EmailVerified int    `json:"email_verified"`
+	DiskUsageRaw  int    `json:"disk_usage_raw"`
+	DiskLimit     string `json:"disk_limit"`
+	DiskLimitRaw  int    `json:"disk_limit_raw"`
+}
+
+//锁，用于 Upload() func
+//var mutex = &sync.Mutex{}
+
+// 用于 返回信息
 type MsgBody struct {
-	Code string   `json:"code"`
-	Data DataInfo `json:"data,omitempty"`
-	Msg  string   `json:"msg,omitempty"` //用于接收错误信息
+	Success   bool                   `json:"success"`
+	Code      string                 `json:"code"`
+	Message   string                 `json:"Message"` //用于接收错误信息
+	Data      map[string]interface{} `json:"data,omitempty"`
+	RequestId string                 `json:"RequestID"`
 }
 
-//用于 ListUploadHistory() func
-type HistoryMsgBody struct {
-	Code string     `json:"code"`
-	Data []DataInfo `json:"data"`
+// 用于 返回信息
+type SliceMsgBody struct {
+	Success   bool                     `json:"success"`
+	Code      string                   `json:"code"`
+	Message   string                   `json:"Message"` //用于接收错误信息
+	Data      []map[string]interface{} `json:"data,omitempty"`
+	RequestId string                   `json:"RequestID"`
 }
 
-//用于获取上传图片的信息
+// 用于获取上传图片的信息
 type DataInfo struct {
 	Width     int    `json:"width"`
 	Height    int    `json:"height"`
 	FileName  string `json:"filename"`
+	FileId    int    `json:"file_id,omitempty"`
 	StoreName string `json:"storename"`
 	Size      int    `json:"size"`
 	Path      string `json:"path"`
 	Hash      string `json:"hash"`
-	TimeStamp int64  `json:"timestamp"`
-	Ip        string `json:"ip"`
 	Url       string `json:"url"`
 	Delete    string `json:"delete"`
+	Page      string `json:"page"`
 }
 ```
-
- 
-# 使用方法，请查看 [example](example) 目录下面的例子
-
 
 ## License
 #### [MIT](https://sndnvaps.mit-license.org/2018)

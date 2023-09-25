@@ -113,7 +113,7 @@ func Upload(c *cli.Context) error {
 
 	path := c.Args().First()
 	token := c.String("token")
-	fmt.Printf("Debug in upload : path= [%s],token= [%s]", path, token)
+	//	fmt.Printf("Debug in upload : path= [%s],token= [%s]", path, token)
 	if IsDir(path) {
 		files, err := os.ReadDir(path)
 		if err != nil {
