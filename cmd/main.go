@@ -2,15 +2,14 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/urfave/cli"
 	sm_ms_api "github.com/sndnvaps/sm-ms-api"
+	"github.com/urfave/cli"
 )
 
 func Clear(c *cli.Context) error {
@@ -44,7 +43,7 @@ func Delete(c *cli.Context) error {
 	return nil
 }
 
-//Test is file
+// Test is file
 func IsFile(file string) bool {
 	f, err := os.Stat(file)
 	if err != nil {
@@ -53,7 +52,7 @@ func IsFile(file string) bool {
 	return !f.IsDir()
 }
 
-//Test is Dir
+// Test is Dir
 func IsDir(file string) bool {
 	f, err := os.Stat(file)
 	if err != nil {
@@ -63,20 +62,21 @@ func IsDir(file string) bool {
 	return f.IsDir()
 }
 
-//IsExists
+// IsExists
 func IsExist(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil || os.IsExist(err)
 }
 
 func List(c *cli.Context) error {
-	token := c.String("api")
+	token := c.String("token")
+	page := c.Int("page")
 	var history sm_ms_api.SliceMsgBody
 	var err error
 	if "" == token {
 		history, err = sm_ms_api.ListHistory()
 	} else {
-		history, err = sm_ms_api.ListUserHistory(token)
+		history, err = sm_ms_api.ListUserHistory(token, page)
 	}
 	if err == nil {
 		num := len(history.Data)
@@ -112,10 +112,10 @@ func List(c *cli.Context) error {
 func Upload(c *cli.Context) error {
 
 	path := c.Args().First()
-	token := c.String("api")
-
+	token := c.String("token")
+	fmt.Printf("Debug in upload : path= [%s],token= [%s]", path, token)
 	if IsDir(path) {
-		files, err := ioutil.ReadDir(path)
+		files, err := os.ReadDir(path)
 		if err != nil {
 			return err
 		}
@@ -183,14 +183,14 @@ func Upload(c *cli.Context) error {
 }
 
 func ListUserProfile(c *cli.Context) error {
-	token := c.String("api")
+	token := c.String("token")
 
 	msg, err := sm_ms_api.ListUserProfile(token)
 
 	if err != nil {
 		return err
 	} else {
-		fmt.Printf("Upload %s\n", msg.Code)
+		fmt.Printf("Http Code %s\n", msg.Code)
 		fmt.Printf("Msg = %s\n", msg.Message)
 
 		data := msg.Data[0]
@@ -221,7 +221,7 @@ func Login(c *cli.Context) error {
 		fmt.Printf("Upload %s\n", msg.Code)
 		fmt.Printf("Msg = %s\n", msg.Message)
 
-		data := msg.Data[0]
+		data := msg.Data
 
 		var token sm_ms_api.Authorization
 		mapstructure.Decode(data, &token) //map[string]interface{} -> struct
@@ -235,14 +235,14 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "sm_ms_tools"
 	app.Compiled = time.Now()
-	app.Version = "2.0.0"
+	app.Version = "2.1.0"
 	app.Authors = []cli.Author{
-		cli.Author{
+		{
 			Name:  "Jimes Yang",
 			Email: "sndnvaps@gmail.com",
 		},
 	}
-	app.Copyright = "(c) 2018 - 2019 Jimes Yang<sndnvaps@gmail.com>"
+	app.Copyright = "(c) 2018 - 2023 Jimes Yang<sndnvaps@gmail.com>"
 	app.Usage = "A tool for sm.ms"
 	app.Commands = []cli.Command{
 		{
@@ -269,8 +269,12 @@ func main() {
 			Usage:   "list the upload history you upload to sm.ms",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "token, api",
+					Name:  "token",
 					Usage: "with token can show the user's upload pic info(it can be empty)",
+				},
+				cli.IntFlag{
+					Name:  "page",
+					Usage: "The page of upload list",
 				},
 			},
 			Action: List,
@@ -281,7 +285,7 @@ func main() {
 			Usage:   "list the user_profile of sm.ms",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "token, api",
+					Name:  "token",
 					Usage: "with token can show the user's Profile",
 				},
 			},
@@ -290,11 +294,11 @@ func main() {
 		{
 			Name:    "upload",
 			Aliases: []string{"u", "up"},
-			Usage:   "upload the file or the files in the folder to sm.ms(with api token or not)",
+			Usage:   "upload the file or the files in the folder to sm.ms(with api token)",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "token, api",
-					Usage: "api token (it can be empty)",
+					Name:  "token",
+					Usage: "api token (it can't be empty)",
 				},
 			},
 			Action: Upload,

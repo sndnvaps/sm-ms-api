@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -19,34 +18,35 @@ import (
 	//"sync"
 )
 
-//API登录，返回token
-//用于 GenToken() func
+// API登录，返回token
+// 用于 GenToken() func
 type LoginBody struct {
 	UserName string `json:"username"`
 	PassWord string `json:"password"`
 }
 
-//Authorization, 用于验证用户信息，token
+// Authorization, 用于验证用户信息，token
 type Authorization struct {
-	Token string `json:"Authorization"`
+	Token string `json:"token"`
 }
 
-//提供 API Token，获得对应用户的基本信息.
+// 提供 API Token，获得对应用户的基本信息.
 type UserProfile struct {
-	Username     string `json:"username"`
-	Email        string `json:"email"`
-	Role         string `json:"role"`
-	GroupExpire  string `json:"group_expire"`
-	DiskUsage    string `json:"disk_usage"`
-	DiskUsageRaw int    `json:"disk_usage_raw"`
-	DiskLimit    string `json:"disk_limit"`
-	DiskLimitRaw int    `json:"disk_limit_raw"`
+	Username      string `json:"username"`
+	Email         string `json:"email"`
+	Role          string `json:"role"`
+	GroupExpire   string `json:"group_expire"`
+	DiskUsage     string `json:"disk_usage"`
+	EmailVerified int    `json:"email_verified"`
+	DiskUsageRaw  int    `json:"disk_usage_raw"`
+	DiskLimit     string `json:"disk_limit"`
+	DiskLimitRaw  int    `json:"disk_limit_raw"`
 }
 
 //锁，用于 Upload() func
 //var mutex = &sync.Mutex{}
 
-//用于 返回信息
+// 用于 返回信息
 type MsgBody struct {
 	Success   bool                   `json:"success"`
 	Code      string                 `json:"code"`
@@ -55,7 +55,7 @@ type MsgBody struct {
 	RequestId string                 `json:"RequestID"`
 }
 
-//用于 返回信息
+// 用于 返回信息
 type SliceMsgBody struct {
 	Success   bool                     `json:"success"`
 	Code      string                   `json:"code"`
@@ -64,7 +64,7 @@ type SliceMsgBody struct {
 	RequestId string                   `json:"RequestID"`
 }
 
-//用于获取上传图片的信息
+// 用于获取上传图片的信息
 type DataInfo struct {
 	Width     int    `json:"width"`
 	Height    int    `json:"height"`
@@ -79,7 +79,7 @@ type DataInfo struct {
 	Page      string `json:"page"`
 }
 
-//Check file suffix , only support jpeg,jpg,png,gif,bmp
+// Check file suffix , only support jpeg,jpg,png,gif,bmp
 func CheckFileSuffix(filename string) (bool, string) {
 	suffix := path.Ext(filename)
 	if (suffix == ".jpeg") || (suffix == ".jpg") ||
@@ -91,14 +91,14 @@ func CheckFileSuffix(filename string) (bool, string) {
 	return false, suffix
 }
 
-func GenToken(usr, pwd string) (SliceMsgBody, error) {
+func GenToken(usr, pwd string) (MsgBody, error) {
 	tmpurl := "https://sm.ms/api/v2/token"
 	data := url.Values{}
 	data.Set("username", usr)
 	data.Set("password", pwd)
 
-	var msg SliceMsgBody
-	msg = SliceMsgBody{
+	var msg MsgBody
+	msg = MsgBody{
 		Code:    "error",
 		Message: " Internal function error",
 	}
@@ -109,7 +109,8 @@ func GenToken(usr, pwd string) (SliceMsgBody, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == 200 {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
+		//		fmt.Printf("GetToken::Body -> [%s]", string(body))
 		err = json.Unmarshal(body, &msg)
 		if err != nil {
 			return msg, err
@@ -119,8 +120,9 @@ func GenToken(usr, pwd string) (SliceMsgBody, error) {
 	return msg, nil
 }
 
-//doc link  https://sm.ms/doc/
+// doc link  https://sm.ms/doc/
 func Upload(filename string, token string) (MsgBody, error) {
+	fmt.Printf("upload func::token= [%s]", token)
 	//mutex.Lock()
 	tmpurl := "https://sm.ms/api/v2/upload"
 
@@ -137,8 +139,8 @@ func Upload(filename string, token string) (MsgBody, error) {
 		return msg, err
 	}
 
-	buf := new(bytes.Buffer)
-	writer := multipart.NewWriter(buf)
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
 	fn, _ := filepath.Abs(filename)
 	formFile, err := writer.CreateFormFile("smfile", fn)
 
@@ -157,22 +159,28 @@ func Upload(filename string, token string) (MsgBody, error) {
 		return msg, err
 	}
 
-	//当token不为空的时候，写入数据，用于上传数据使用
-	if "" != token {
-		writer.WriteField("Authorization", token)
-	}
-
 	//发送表单
 	contentType := writer.FormDataContentType()
 	writer.Close() //发送之前必须调用Close()以写入结尾行
-	resp, err := http.Post(tmpurl, contentType, buf)
+	req, err := http.NewRequest("POST", tmpurl, &buf)
 	//mutex.Unlock()
 	if err != nil {
 		return msg, err
 	}
+	req.Header.Set("Content-type", contentType)
+	req.Header.Set("Authorization", token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return msg, err
+	}
 	defer resp.Body.Close()
+
+	//fmt.Printf("upload::StatusCode -> [%d]", resp.StatusCode)
 	if resp.StatusCode == 200 {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		err = json.Unmarshal(body, &msg)
 		if err != nil {
 			return msg, err
@@ -183,7 +191,7 @@ func Upload(filename string, token string) (MsgBody, error) {
 	return msg, nil
 }
 
-//获得过去一小时内上传的文件列表
+// 获得过去一小时内上传的文件列表
 func ListHistory() (SliceMsgBody, error) {
 	var msg SliceMsgBody
 	resp, err := http.Get("https://sm.ms/api/v2/history")
@@ -191,7 +199,7 @@ func ListHistory() (SliceMsgBody, error) {
 		return msg, err
 	}
 	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	if err = json.Unmarshal(body, &msg); err == nil {
 		return msg, nil
 	} else {
@@ -200,15 +208,13 @@ func ListHistory() (SliceMsgBody, error) {
 
 }
 
-//提供 API Token，获得对应用户的所有上传图片信息.
-func ListUserHistory(token string) (SliceMsgBody, error) {
+// 提供 API Token，获得对应用户的所有上传图片信息.
+func ListUserHistory(token string, page int) (SliceMsgBody, error) {
 	var msg SliceMsgBody
 	tmpurl := "https://sm.ms/api/v2/upload_history"
 	req, err := http.NewRequest("POST", tmpurl, nil)
 	req.Header.Add("Content-Type", "multipart/form-data")
-	if "" != token {
-		req.Header.Add("Authorization", token)
-	}
+	req.Header.Add("Authorization", token)
 	if err != nil {
 		return msg, err
 	}
@@ -220,7 +226,7 @@ func ListUserHistory(token string) (SliceMsgBody, error) {
 		return msg, err
 	}
 	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	if err = json.Unmarshal(body, &msg); err == nil {
 		return msg, nil
 	} else {
@@ -229,26 +235,36 @@ func ListUserHistory(token string) (SliceMsgBody, error) {
 
 }
 
-//提供 API Token，获得对应用户的基本信息.
+// 提供 API Token，获得对应用户的基本信息.
 func ListUserProfile(token string) (SliceMsgBody, error) {
 	var msg SliceMsgBody
+	fmt.Printf("debug for ListUserProfile: token= [%s]", token)
+
 	tmpurl := "https://sm.ms/api/v2/profile"
 	req, err := http.NewRequest("POST", tmpurl, nil)
 	req.Header.Add("Content-Type", "multipart/form-data")
 	req.Header.Add("Authorization", token)
 
 	if err != nil {
+		fmt.Printf("debug in err1: msg = [%s],err info = [%s]", msg.Message, err.Error())
 		return msg, err
 	}
-	defer req.Body.Close()
+	//defer req.Body.Close()
 
-	client := &http.Client{Timeout: 5 * time.Second}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
+		fmt.Printf("debug in err1: msg = [%s],err info = [%s]", msg.Message, err.Error())
 		return msg, err
 	}
 	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+
+		fmt.Printf("deubug for lup: StatusCode = [%d]", resp.StatusCode)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	fmt.Printf("deubug for lup: body=[%s]", string(body))
 	if err = json.Unmarshal(body, &msg); err == nil {
 		return msg, nil
 	} else {
@@ -257,7 +273,7 @@ func ListUserProfile(token string) (SliceMsgBody, error) {
 
 }
 
-//用指定的 删除地址来 删除已经上传的图片
+// 用指定的 删除地址来 删除已经上传的图片
 func Delete(hash string) (MsgBody, error) {
 
 	tmpurl := "https://sm.ms/api/v2/delete/" + hash
@@ -267,7 +283,7 @@ func Delete(hash string) (MsgBody, error) {
 		return msg, err
 	}
 	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	if err = json.Unmarshal(body, &msg); err == nil {
 		return msg, nil
 	} else {
@@ -283,7 +299,7 @@ func Clear() (MsgBody, error) {
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	if err = json.Unmarshal(body, &msg); err == nil {
 		return msg, nil
 	} else {
