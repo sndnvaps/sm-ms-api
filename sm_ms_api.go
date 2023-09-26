@@ -236,8 +236,8 @@ func ListUserHistory(token string, page int) (SliceMsgBody, error) {
 }
 
 // 提供 API Token，获得对应用户的基本信息.
-func ListUserProfile(token string) (SliceMsgBody, error) {
-	var msg SliceMsgBody
+func ListUserProfile(token string) (MsgBody, error) {
+	var msg MsgBody
 	fmt.Printf("debug for ListUserProfile: token= [%s]", token)
 
 	tmpurl := "https://sm.ms/api/v2/profile"

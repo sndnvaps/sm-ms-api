@@ -193,7 +193,7 @@ func ListUserProfile(c *cli.Context) error {
 		fmt.Printf("Http Code %s\n", msg.Code)
 		fmt.Printf("Msg = %s\n", msg.Message)
 
-		data := msg.Data[0]
+		data := msg.Data
 		var usr_profile sm_ms_api.UserProfile
 		mapstructure.Decode(data, &usr_profile) //map[string]interface{} -> struct
 		fmt.Printf("Username: %s\n", usr_profile.Username)
