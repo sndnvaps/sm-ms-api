@@ -70,13 +70,12 @@ func IsExist(path string) bool {
 
 func List(c *cli.Context) error {
 	token := c.String("token")
-	page := c.Int("page")
 	var history sm_ms_api.SliceMsgBody
 	var err error
 	if "" == token {
 		history, err = sm_ms_api.ListHistory()
 	} else {
-		history, err = sm_ms_api.ListUserHistory(token, page)
+		history, err = sm_ms_api.ListUserHistory(token)
 	}
 	if err == nil {
 		num := len(history.Data)
@@ -103,6 +102,7 @@ func List(c *cli.Context) error {
 		}
 
 	} else {
+		fmt.Printf("ListUserHistory:error = [%s]", err.Error())
 		return err
 	}
 
@@ -235,7 +235,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "sm_ms_tools"
 	app.Compiled = time.Now()
-	app.Version = "2.1.0"
+	app.Version = "2.1.1"
 	app.Authors = []cli.Author{
 		{
 			Name:  "Jimes Yang",
@@ -272,17 +272,13 @@ func main() {
 					Name:  "token",
 					Usage: "with token can show the user's upload pic info(it can be empty)",
 				},
-				cli.IntFlag{
-					Name:  "page",
-					Usage: "The page of upload list",
-				},
 			},
 			Action: List,
 		},
 		{
 			Name:    "listusrprofile",
 			Aliases: []string{"lup"},
-			Usage:   "list the user_profile of sm.ms",
+			Usage:   "list the user_profile of sm.ms with token",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "token",

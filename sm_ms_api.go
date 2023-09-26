@@ -209,16 +209,17 @@ func ListHistory() (SliceMsgBody, error) {
 }
 
 // 提供 API Token，获得对应用户的所有上传图片信息.
-func ListUserHistory(token string, page int) (SliceMsgBody, error) {
+func ListUserHistory(token string) (SliceMsgBody, error) {
 	var msg SliceMsgBody
 	tmpurl := "https://sm.ms/api/v2/upload_history"
-	req, err := http.NewRequest("POST", tmpurl, nil)
+
+	req, err := http.NewRequest("GET", tmpurl, nil)
 	req.Header.Add("Content-Type", "multipart/form-data")
 	req.Header.Add("Authorization", token)
 	if err != nil {
 		return msg, err
 	}
-	defer req.Body.Close()
+	//defer req.Body.Close()
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
@@ -226,7 +227,9 @@ func ListUserHistory(token string, page int) (SliceMsgBody, error) {
 		return msg, err
 	}
 	defer resp.Body.Close()
+	//fmt.Printf("ListUploadHistory::StatusCode = [%d]", resp.StatusCode)
 	body, _ := io.ReadAll(resp.Body)
+	//	fmt.Printf("deubug for ListUserHistory: body=[%s]", string(body))
 	if err = json.Unmarshal(body, &msg); err == nil {
 		return msg, nil
 	} else {
